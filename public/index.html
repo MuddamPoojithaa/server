@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-direction: column;
+            align-items: center;
+        }
+        input[type="text"], input[type="tel"] {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #tasks {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Pooja App</h1>
+<form id="taskForm">
+    <input type="text" id="taskTitle" placeholder="Enter task title" required>
+    <input 
+        type="tel" 
+        id="taskMobile" 
+        placeholder="Enter mobile number" 
+        pattern="[6-9]{1}[0-9]{9}" 
+        maxlength="10" 
+        required 
+        title="Please enter a valid 10-digit mobile number"
+        oninput="validateMobileInput(this)">
+    <button type="submit">Add Task</button>
+</form>
+<div class="error-message" id="errorMessage"></div>
+<div id="tasks">
+    <h2>Tasks</h2>
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+    function validateMobileInput(input) {
+        // Restrict to numbers only and ensure max length of 10
+        input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const taskTitle = document.getElementById('taskTitle').value.trim();
+        const taskMobile = document.getElementById('taskMobile').value.trim();
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        // Validate mobile number for specific criteria
+        const mobileRegex = /^[6-9]\d{9}$/; // Starts with 6-9 and exactly 10 digits
+        if (!mobileRegex.test(taskMobile)) {
+            errorMessageDiv.textContent = 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.';
+            return;
+        }
+
+        // Add the task to the backend
+        const response = await fetch('http://localhost:5000/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: taskTitle, mobile: taskMobile })
+        });
+
+        if (response.ok) {
+            errorMessageDiv.textContent = ''; // Clear error message on success
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskMobile').value = '';
+            loadTasks();
+        } else {
+            const errorData = await response.json();
+            errorMessageDiv.textContent = errorData.message;
+        }
+    });
+
+    async function loadTasks() {
+        const response = await fetch('http://localhost:5000/tasks');
+        const tasks = await response.json();
+
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            li.textContent = `Title: ${task.title}, Mobile: ${task.mobile}`;
+            taskList.appendChild(li);
+        });
+    }
+
+    // Load tasks on page load
+    loadTasks();
+</script>
+
+</body>
+</html>
